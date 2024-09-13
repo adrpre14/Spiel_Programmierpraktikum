@@ -6,7 +6,6 @@ import java.io.IOException;
 public class Tile {
     private BoundingBox boundingBox;
     private int imageIndex = 0;
-    int x, y;
     private final BufferedImage[] tileImages;
 
     {
@@ -50,8 +49,8 @@ public class Tile {
     public BufferedImage getImage() {
         return tileImages[imageIndex];
     }
+
     public int getImageIndex() {
         return imageIndex;
     }
-
 }

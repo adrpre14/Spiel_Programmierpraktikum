@@ -5,12 +5,34 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+enum TileType {
+    WATER,
+    WATER_CENTER,
+    GRASS,
+    GRASS_HALF,
+    GRASS_CENTER,
+    LAVA,
+    SAND_TOP,
+    SAND_CENTER,
+    SAND_HALF,
+    STONE_TOP,
+    STONE_CENTER,
+    STONE_HALF,
+    DOOR_BOTTOM,
+    DOOR_TOP,
+    EXIT_SIGN,
+    SNOW,
+    SNOW_CENTER,
+    DOOR_OPENED_BOTTOM,
+    DOOR_OPENED_TOP
+}
+
 public class Level {
 
     BufferedImage levelImg;
     BufferedImage outputImg;
 
-    ArrayList<Tile> tiles = new ArrayList<>();
+    private ArrayList<Tile> tiles = new ArrayList<>();
     ArrayList<Tile> dynamicTile = new ArrayList<>();
 
     public Level(String levelPath) throws IOException {
@@ -51,46 +73,45 @@ public class Level {
     private int getImageIndex(Color pixelColor) {
         // Add logic to map pixel colors to image indices
         if (pixelColor.equals(Color.BLUE)) {
-            return 0; // water
+            return TileType.WATER.ordinal(); // water
         } else if (pixelColor.equals(new Color(0, 0, 230))) {
-            return 1; // water center
+            return TileType.WATER_CENTER.ordinal(); // water center
         } else if (pixelColor.equals(Color.BLACK)) {
-            return 2; // grass
+            return TileType.GRASS.ordinal(); // grass
         } else if (pixelColor.equals(new Color(0, 0, 10))) {
-            return 3; // grass half
+            return TileType.GRASS_HALF.ordinal(); // grass half
         } else if (pixelColor.equals(new Color(255, 128, 0))) {
-            return 4; // grass center
+            return TileType.GRASS_CENTER.ordinal(); // grass center
         } else if (pixelColor.equals(Color.RED)) {
-            return 5; // lava
+            return TileType.LAVA.ordinal(); // lava
         } else if (pixelColor.equals(Color.YELLOW)) {
-            return 6; // sand top
+            return TileType.SAND_TOP.ordinal(); // sand top
         } else if (pixelColor.equals(new Color(255, 255, 102))) {
-            return 7; // sand center
+            return TileType.SAND_CENTER.ordinal(); // sand center
         } else if (pixelColor.equals(new Color(255, 255, 10))) {
-            return 8; // sand half
+            return TileType.SAND_HALF.ordinal(); // sand half
         } else if (pixelColor.equals(new Color(255, 0, 255))) {
-            return 9; // stone top
+            return TileType.STONE_TOP.ordinal(); // stone top
         } else if (pixelColor.equals(new Color(255, 0, 230))) {
-            return 10; // stone center
+            return TileType.STONE_CENTER.ordinal(); // stone center
         } else if (pixelColor.equals(new Color(255, 10, 255))) {
-            return 11; // stone half
+            return TileType.STONE_HALF.ordinal(); // stone half
         } else if (pixelColor.equals(new Color(102, 77, 0))) {
-            return 12; // door bottom
+            return TileType.DOOR_BOTTOM.ordinal(); // door bottom
         } else if (pixelColor.equals(new Color(128, 102, 0))) {
-            return 13; // door top
+            return TileType.DOOR_TOP.ordinal(); // door top
         } else if (pixelColor.equals(new Color(255, 51, 0))) {
-            return 14; // exit sign
+            return TileType.EXIT_SIGN.ordinal(); // exit sign
         } else if (pixelColor.equals(new Color(0, 255, 255))) {
-            return 15; // snow
+            return TileType.SNOW.ordinal(); // snow
         } else if (pixelColor.equals(new Color(0, 240, 255))) {
-            return 16; // snow center
+            return TileType.SNOW_CENTER.ordinal(); // snow center
         } else if (pixelColor.equals(new Color(26, 26, 0))) {
-            return 17; // door opened bottom
+            return TileType.DOOR_OPENED_BOTTOM.ordinal(); // door opened bottom
         } else if (pixelColor.equals(new Color(26, 13, 0))) {
-            return 18; // door opened top
+            return TileType.DOOR_OPENED_TOP.ordinal(); // door opened top
         } else if (pixelColor.equals(new Color(21, 10, 200))) {
             return 19; // Coin
-
         } else {
             return -1;
         }
@@ -98,5 +119,13 @@ public class Level {
 
     public BufferedImage getImage() {
         return outputImg;
+    }
+
+    public ArrayList<Tile> getVisibleTiles(int posX) {
+        return tiles.stream().filter(tile -> {
+            int tileX = (int) tile.getBoundingBox().min.x;
+            int tileWidth = (int) (tile.getBoundingBox().max.x - tile.getBoundingBox().min.x);
+            return tileX >= posX - tileWidth && tileX <= posX + 1000;
+        }).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 }

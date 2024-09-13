@@ -14,7 +14,8 @@ import javax.swing.*;
 public class Platformer extends JFrame {
 	private static final long serialVersionUID = 1L;
 
-	private Level level;
+	private final ArrayList<Level> levels = new ArrayList<>();
+	private Level currentLevel;
 	private Player player;
 	private int scrollX = 20;  // Horizontal scroll position
 	private final int scrollSpeed = 5;  // Speed of scrolling
@@ -28,18 +29,21 @@ public class Platformer extends JFrame {
 				System.exit(0);
 			}
 		});
+        try {
+			levels.add(new Level("my_level1.bmp"));
+            levels.add(new Level("my_level2_1.bmp"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-		// Initialize level and player
-		try {
-			level = new Level("my_level2_1.bmp");
-			player = new Player(50, 300);
-			player.playSound("assets/Sound/soundtrack.wav");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+        // Initialize level and player
+		player = new Player(50, 0, "p" + (levels.size() % 2 + 1));
+        player.playSound("assets/Sound/soundtrack.wav");
+		currentLevel = levels.get(0);
+		levels.remove(0);
 
 		// Set window size
-		this.setBounds(0, 0, 1000, level.getImage().getHeight());
+		this.setBounds(0, 0, 1000, currentLevel.getImage().getHeight());
 		this.setVisible(true);
 
 		// Create buffer strategy for double buffering
@@ -96,15 +100,15 @@ public class Platformer extends JFrame {
 		}
 
 		// Clamp the scroll position to the level bounds to prevent scrolling past the level
-		scrollX = Math.max(0, Math.min(scrollX, level.getImage().getWidth() - 1000));
+		scrollX = Math.max(0, Math.min(scrollX, currentLevel.getImage().getWidth() - 1000));
 	}
 
 	// New draw method to render the game elements
 	private void draw(Graphics2D g2d) throws IOException {
-		BufferedImage levelImg = level.getImage();
+		BufferedImage levelImg = currentLevel.getImage();
 
 		// Only show the visible part of the level image (1000x350 pixels)
-		BufferedImage visibleLevel = levelImg.getSubimage(scrollX, 0, 1000, level.getImage().getHeight());
+		BufferedImage visibleLevel = levelImg.getSubimage(scrollX, 0, 1000, currentLevel.getImage().getHeight());
 		g2d.drawImage(visibleLevel, 0, 0, null);
 
 		for (Tile tile : level.dynamicTile) {
@@ -145,7 +149,7 @@ public class Platformer extends JFrame {
 	}
 
 	private void checkCollision() {
-		for (Tile tile : level.tiles) {
+		for (Tile tile : currentLevel.getVisibleTiles(player.x)) {
 			if (tile.getImageIndex() == 0 || tile.getImageIndex() == 1
 					|| tile.getImageIndex() == 5 || tile.getImageIndex() == 13
 					|| tile.getImageIndex() == 14 || tile.getImageIndex() == 12
@@ -160,25 +164,35 @@ public class Platformer extends JFrame {
 					continue;
 				}
 			} else if (player.getBoundingBox().intersect(tile.getBoundingBox())) {
+				if (tile.getImageIndex() == TileType.DOOR_OPENED_BOTTOM.ordinal() || tile.getImageIndex() == TileType.DOOR_OPENED_TOP.ordinal()) {
+					if (!levels.isEmpty()) {
+						player = new Player(50, 0, "p" + (levels.size() % 2 + 1));
+						currentLevel = levels.get(0);
+						levels.remove(0);
+						scrollX = 0;
+						setBounds(0, 0, 1000, currentLevel.getImage().getHeight());
+						return;
+					}
+
+					// No more levels
+					System.exit(0);
+				}
 				Vec2 result = player.getBoundingBox().overlapSize(tile.getBoundingBox());
+				if (result.x == 0 && result.y == 0) continue;
 				if (result.x > result.y) { // Vertical collision
 					if (player.getBoundingBox().max.y < tile.getBoundingBox().max.y) { // Player is above the tile
 						player.y -= (int) result.y;
-						player.speedY = 0;
-//						System.out.println("Collision bottom");
+						player.isGrounded = true;
 					} else { // Player is below the tile
-						player.y += (int) result.y;
-						player.speedY = 0;
-//						System.out.println("Collision top");
+ 						player.y += (int) result.y;
 					}
+					player.speedY = 0;
 				} else {
 					// Horizontal collision
-					if (player.x < tile.getBoundingBox().min.x) { // Player is to the left of the tile
+					if (player.getBoundingBox().min.x < tile.getBoundingBox().min.x) { // Player is to the left of the tile
 						player.x -= (int) result.x;
-//						System.out.println("Collision right");
 					} else { // Player is to the right of the tile
 						player.x += (int) result.x;
-//						System.out.println("Collision left");
 					}
 				}
 			}
