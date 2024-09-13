@@ -6,6 +6,7 @@ import java.io.IOException;
 public class Tile {
     private BoundingBox boundingBox;
     private int imageIndex = 0;
+    int x, y;
     private final BufferedImage[] tileImages;
 
     {
@@ -29,7 +30,8 @@ public class Tile {
                     ImageIO.read(new File("assets/Tiles/snowMid.png")),
                     ImageIO.read(new File("assets/Tiles/snowCenter.png")),
                     ImageIO.read(new File("assets/Tiles/door_openMid.png")),
-                    ImageIO.read(new File("assets/Tiles/door_openTop.png"))
+                    ImageIO.read(new File("assets/Tiles/door_openTop.png")),
+                    ImageIO.read(new File("assets/Items/coinGold.png")),
             };
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -48,4 +50,8 @@ public class Tile {
     public BufferedImage getImage() {
         return tileImages[imageIndex];
     }
+    public int getImageIndex() {
+        return imageIndex;
+    }
+
 }

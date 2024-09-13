@@ -2,6 +2,9 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+
 
 public class Player {
     BufferedImage[] walkImg;
@@ -11,16 +14,18 @@ public class Player {
     //Player position and speed
     int x, y;
     int width, height;
-    int speedX = 20;
+    int speedX = 5;
     int speedY = 0; // for jumping
 
     boolean walkLeft = false;
     boolean walkRight = false;
     boolean jump = false;
+    boolean isGrounded = false;
 
     //Constants for gravity and jumping
     final int GRAVITY = 1;
     final int JUMP_POWER = -15;
+    final int MAX_FALL_SPEED = 100;
 
     private BoundingBox boundingBox;
 
@@ -65,11 +70,18 @@ public class Player {
         if (jump) {
             speedY = JUMP_POWER;
             jump = false; // only jump once per key press
+            isGrounded = false;
+            playSound("assets/Sound/jump1.wav");
         }
 
         //Apply gravity
+        if (!isGrounded) {
+            speedY += GRAVITY;
+            if (speedY > MAX_FALL_SPEED) {
+                speedY = MAX_FALL_SPEED; // Cap the fall speed
+            }
+        }
         y += speedY;
-        speedY += GRAVITY;
 
         // respawn in the beginning
         if (y > 2000) {
@@ -84,6 +96,17 @@ public class Player {
         }
 
         boundingBox = new BoundingBox(new Vec2(x, y), new Vec2(x + width, y + height));
+    }
+
+    public void playSound(String path){
+        File lol = new File(path);
+        try{
+            Clip clip = AudioSystem.getClip();
+            clip.open(AudioSystem.getAudioInputStream(lol));
+            clip.start();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     public BoundingBox getBoundingBox() {

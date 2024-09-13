@@ -3,8 +3,12 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 
 public class Platformer extends JFrame {
@@ -12,9 +16,10 @@ public class Platformer extends JFrame {
 
 	private Level level;
 	private Player player;
-	private int scrollX = 0;  // Horizontal scroll position
-	private final int scrollSpeed = 20;  // Speed of scrolling
+	private int scrollX = 20;  // Horizontal scroll position
+	private final int scrollSpeed = 5;  // Speed of scrolling
 	private BufferStrategy bufferStrategy;  // For double buffering
+	private ArrayList<Tile> tilesToRemove = new ArrayList<>();
 
 	public Platformer() {
 		// Exit program when window is closed
@@ -26,8 +31,9 @@ public class Platformer extends JFrame {
 
 		// Initialize level and player
 		try {
-			level = new Level("my_level2.bmp");
+			level = new Level("my_level2_1.bmp");
 			player = new Player(50, 300);
+			player.playSound("assets/Sound/soundtrack.wav");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -94,15 +100,30 @@ public class Platformer extends JFrame {
 	}
 
 	// New draw method to render the game elements
-	private void draw(Graphics2D g2d) {
+	private void draw(Graphics2D g2d) throws IOException {
 		BufferedImage levelImg = level.getImage();
 
 		// Only show the visible part of the level image (1000x350 pixels)
 		BufferedImage visibleLevel = levelImg.getSubimage(scrollX, 0, 1000, level.getImage().getHeight());
 		g2d.drawImage(visibleLevel, 0, 0, null);
 
-		// Draw the player on top of the level
-		g2d.drawImage(player.getCurrentImg(), player.x - scrollX, player.y, null);
+		for (Tile tile : level.dynamicTile) {
+			 if (tile.getImageIndex() == 19) {
+				 if (tilesToRemove.contains(tile)) {
+					 continue;
+				 }
+				g2d.drawImage(tile.getImage(),(int) tile.getBoundingBox().min.x - scrollX, (int) tile.getBoundingBox().min.y, null);
+			}
+		}
+
+		if (player.walkLeft) {
+			// Flip the image horizontally
+			g2d.drawImage(flipImageHorizontally(player.currentImg), player.x - scrollX - player.currentImg.getWidth()+100, player.y, null);
+		}
+		else {
+			g2d.drawImage(player.currentImg, player.x - scrollX, player.y, null);
+		}
+
 	}
 
 	@Override
@@ -113,6 +134,8 @@ public class Platformer extends JFrame {
 		try {
 			g2d = (Graphics2D) bufferStrategy.getDrawGraphics();
 			draw(g2d);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		} finally {
 			if (g2d != null) {
 				g2d.dispose();
@@ -123,10 +146,23 @@ public class Platformer extends JFrame {
 
 	private void checkCollision() {
 		for (Tile tile : level.tiles) {
-			if (player.getBoundingBox().intersect(tile.getBoundingBox())) {
+			if (tile.getImageIndex() == 0 || tile.getImageIndex() == 1
+					|| tile.getImageIndex() == 5 || tile.getImageIndex() == 13
+					|| tile.getImageIndex() == 14 || tile.getImageIndex() == 12
+					|| tile.getImageIndex() == 17 || tile.getImageIndex() == 18) {
+				// player should not collide with water or water center tiles
+				continue;
+			} else if (tile.getImageIndex() == 19) {
+				// player should be able to collect coins
+				if (player.getBoundingBox().intersect(tile.getBoundingBox())) {
+					tilesToRemove.add(tile);
+					player.playSound("assets/Sound/coin.wav");
+					continue;
+				}
+			} else if (player.getBoundingBox().intersect(tile.getBoundingBox())) {
 				Vec2 result = player.getBoundingBox().overlapSize(tile.getBoundingBox());
 				if (result.x > result.y) { // Vertical collision
-					if (player.y < tile.getBoundingBox().max.y) { // Player is above the tile
+					if (player.getBoundingBox().max.y < tile.getBoundingBox().max.y) { // Player is above the tile
 						player.y -= (int) result.y;
 						player.speedY = 0;
 //						System.out.println("Collision bottom");
@@ -147,5 +183,22 @@ public class Platformer extends JFrame {
 				}
 			}
 		}
+		level.tiles.removeAll(tilesToRemove);
 	}
+
+	private BufferedImage flipImageHorizontally(BufferedImage img) {
+		AffineTransform transform = AffineTransform.getScaleInstance(-1, 1);  // Flip the x-axis
+		transform.translate(-img.getWidth(), 0);  // Adjust translation to fit the flipped image
+
+		// Create a new image with the same dimensions
+		BufferedImage flippedImage = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
+
+		// Draw the flipped image
+		Graphics2D g2d = flippedImage.createGraphics();
+		g2d.drawImage(img, transform, null);
+		g2d.dispose();  // Clean up graphics context
+
+		return flippedImage;
+	}
+
 }

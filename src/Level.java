@@ -11,6 +11,7 @@ public class Level {
     BufferedImage outputImg;
 
     ArrayList<Tile> tiles = new ArrayList<>();
+    ArrayList<Tile> dynamicTile = new ArrayList<>();
 
     public Level(String levelPath) throws IOException {
         levelImg = ImageIO.read(new File(levelPath));
@@ -21,7 +22,10 @@ public class Level {
     }
 
     //create output image from level image by mapping colors to tiles
-    private void generateLevel() {
+    public void generateLevel() throws IOException {
+        BufferedImage backgroundImg = ImageIO.read(new File("assets/background0.png"));
+        Graphics2D g2d = outputImg.createGraphics();
+        g2d.drawImage(backgroundImg, 0, 0, outputImg.getWidth(), outputImg.getHeight(), null);
         for (int y = 0; y < levelImg.getHeight(); y++) {
             for (int x = 0; x < levelImg.getWidth(); x++) {
                 Color pixelColor = new Color(levelImg.getRGB(x, y));
@@ -30,9 +34,15 @@ public class Level {
                 int imageIndex = getImageIndex(pixelColor);
 
                 if (imageIndex != -1) {
-                    tile = new Tile(x * 70, y * 70, 70, 70, imageIndex);
-                    tiles.add(tile);
-                    outputImg.getGraphics().drawImage(tile.getImage(), x * 70, y * 70, null);
+                    if (imageIndex == 19) {
+                        tile = new Tile(x * 70, y * 70, 70, 70, imageIndex);
+                        tiles.add(tile);
+                        dynamicTile.add(tile);
+                    } else {
+                        tile = new Tile(x * 70, y * 70, 70, 70, imageIndex);
+                        tiles.add(tile);
+                        outputImg.getGraphics().drawImage(tile.getImage(), x * 70, y * 70, null);
+                    }
                 }
             }
         }
@@ -78,6 +88,9 @@ public class Level {
             return 17; // door opened bottom
         } else if (pixelColor.equals(new Color(26, 13, 0))) {
             return 18; // door opened top
+        } else if (pixelColor.equals(new Color(21, 10, 200))) {
+            return 19; // Coin
+
         } else {
             return -1;
         }
