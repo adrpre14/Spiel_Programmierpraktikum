@@ -48,4 +48,8 @@ public class Tile {
     public BufferedImage getImage() {
         return tileImages[imageIndex];
     }
+
+    public int getImageIndex() {
+        return imageIndex;
+    }
 }
